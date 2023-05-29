@@ -1,0 +1,58 @@
+// 定义变量，抽象体，应用
+newVariable = name => {return {"type": "variable", "name": name}}
+newAbstraction = (param, body) => {return {"type": "abstraction", "param": param, "body": body} }
+newApplication = (a, v) => { return { "type": "application", "functor": a, "arguments": v} }
+
+// 定义替换规则
+substitute = (x, s, e) => {
+    switch e.type {
+    case "variable":
+        if e.name == x {
+            return s
+        } else {
+            return e
+        }
+    case "abstraction":
+        if e.param != x {
+            return newAbstraction(e.param, substitute(x, s, e.body))
+        }else{
+            return e
+        }
+    case "application":
+        return newApplication(substitute(x, s, e.functor), substitute(x, s, e.arguments))
+    }
+}
+
+// 执行 Beta 规约演算
+betaReduce = e => {
+    if e.type != "application" {
+        return e
+    }
+
+    functor := betaReduce(e.functor)
+    arg := betaReduce(e.arguments)
+    if functor.type == "abstraction" {
+        return betaReduce(substitute(functor.param, arg, functor.body))
+    } else {
+        return newApplication(functor, arg)
+    }
+}
+
+// 构造一个表达式
+expr = newApplication(newAbstraction("x", newVariable("x")), newVariable("y"))
+
+formatter = expr => {
+    switch expr.type {
+    case "variable":
+        return "" + expr.name + ""
+    case "abstraction":
+        return `λ` + expr.param + "." + "(" + expr.param + " " + formatter(expr.body) + ")"
+    case "application":
+        return "(%v) %v" % [formatter(expr.functor), formatter(expr.arguments)]
+    }
+    return expr
+}
+
+println("Yaklang Lambda Calculus: Beta Reducer")
+println("Expression:     %v" % formatter(expr))
+println("Beta Reduced:   %v" % formatter(betaReduce(expr)))
